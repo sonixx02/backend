@@ -1,16 +1,26 @@
-import mongoose, {Schema} from "mongoose"
+import mongoose, {Schema} from "mongoose";
 
-const subscriptionSchema = new Schema({
-    subscriber: {
-        type: Schema.Types.ObjectId, // one who is subscribing
+const playlistSchema = new Schema({
+    name: {
+        type: String,
+        required: true
+    },
+    description: {
+        type: String,
+        required: true
+    },
+    videos: [
+        {
+            type: Schema.Types.ObjectId,
+            ref: "Video"
+        }
+    ],
+    owner: {
+        type: Schema.Types.ObjectId,
         ref: "User"
     },
-    channel: {
-        type: Schema.Types.ObjectId, // one to whom 'subscriber' is subscribing
-        ref: "User"
-    }
 }, {timestamps: true})
 
 
 
-export const Subscription = mongoose.model("Subscription", subscriptionSchema)
+export const Playlist = mongoose.model("Playlist", playlistSchema)
