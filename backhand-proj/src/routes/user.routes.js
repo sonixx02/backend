@@ -41,10 +41,25 @@ import {
 } from "../controllers/like.controller.js";
 
 import {
+  createPlaylist,
+  getUserPlaylists,
+  getPlaylistById,
+  addVideoToPlaylist,
+  removeVideoFromPlaylist,
+  deletePlaylist,
+  updatePlaylist,
+} from "../controllers/playlist.controller.js";
+
+import {
   toggleSubscription,
   getUserChannelSubscribers,
   getSubscribedChannels,
-} from "../controllers/subscriptionController.js";
+} from "../controllers/subscription.controller.js";
+
+import {
+  getChannelStats,
+  getChannelVideos,
+} from "../controllers/dashboard.controller.js";
 
 import { upload } from "../middlewares/multer.middleware.js";
 import { verifyJWT } from "../middlewares/auth.middleware.js";
@@ -90,17 +105,16 @@ router.route("/comments/:id").put(verifyJWT, updateComment);
 
 router.route("/comments/:commentId").delete(verifyJWT, deleteComment);
 
-router.get("/", getAllVideos); // Get all videos with pagination, filtering, and sorting
+router.get("/", getAllVideos);
 
-router.post("/publish", verifyJWT, upload.single("videoFile"), publishAVideo); // Publish a new video
+router.post("/publish", verifyJWT, upload.single("videoFile"), publishAVideo);
+router.get("/:videoId", getVideoById);
 
-router.get("/:videoId", getVideoById); // Get a video by ID
+router.put("/:videoId", verifyJWT, updateVideo);
 
-router.put("/:videoId", verifyJWT, updateVideo); // Update a video by ID
+router.delete("/:videoId", verifyJWT, deleteVideo);
 
-router.delete("/:videoId", verifyJWT, deleteVideo); // Delete a video by ID
-
-router.patch("/:videoId/toggle-publish", verifyJWT, togglePublishStatus); // Toggle publish status of a video by ID
+router.patch("/:videoId/toggle-publish", verifyJWT, togglePublishStatus);
 
 router.route("/videos/:videoId/like").post(protect, toggleVideoLike);
 router.route("/comments/:commentId/like").post(protect, toggleCommentLike);
@@ -112,9 +126,33 @@ router.route("/tweets/:tweetId").get(protect, getUserTweets);
 router.route("/tweets/:id").put(protect, updateTweet);
 router.route("/tweets/:id").delete(protect, deleteTweet);
 
+// Playlist routes
+router
+  .route("/playlists")
+  .post(verifyJWT, createPlaylist)
+  .get(verifyJWT, getUserPlaylists);
+router
+  .route("/playlists/:playlistId")
+  .get(verifyJWT, getPlaylistById)
+  .delete(verifyJWT, deletePlaylist)
+  .patch(verifyJWT, updatePlaylist);
+
+router
+  .route("/playlists/:playlistId/videos/:videoId")
+  .post(verifyJWT, addVideoToPlaylist)
+  .delete(verifyJWT, removeVideoFromPlaylist);
+
 // Subscription routes
 router.route("/subscribe/:channelId").post(verifyJWT, toggleSubscription);
-router.route("/subscribers/:channelId").get(verifyJWT, getUserChannelSubscribers);
-router.route("/subscriptions/:subscriberId").get(verifyJWT, getSubscribedChannels);
+router
+  .route("/subscribers/:channelId")
+  .get(verifyJWT, getUserChannelSubscribers);
+router
+  .route("/subscriptions/:subscriberId")
+  .get(verifyJWT, getSubscribedChannels);
+
+// Dashboard routes
+router.route("/dashboard/channel-stats").get(verifyJWT, getChannelStats);
+router.route("/dashboard/channel-videos").get(verifyJWT, getChannelVideos);
 
 export default router;
