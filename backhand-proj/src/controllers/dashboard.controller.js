@@ -48,16 +48,19 @@ export const getChannelStats = asyncHandler(async (req, res) => {
               from: "likes",
               let: { videoId: "$_id" },
               pipeline: [
-                { $match: 
-                    { $expr: 
-                        { 
-                            $eq: ["$video", "$$videoId"] 
-                        } 
-                    } 
+                {
+                  $match:
+                  {
+                    $expr:
+                    {
+                      $eq: ["$video", "$$videoId"]
+                    }
+                  }
                 },
 
-                { $group: 
-                    { _id: null, totalVideoLikes: { $sum: 1 } } 
+                {
+                  $group:
+                    { _id: null, totalVideoLikes: { $sum: 1 } }
                 },
                 { $project: { totalVideoLikes: 1, _id: 0 } },
               ],
@@ -100,22 +103,63 @@ export const getChannelStats = asyncHandler(async (req, res) => {
 });
 
 export const getChannelVideos = asyncHandler(async (req, res) => {
-  const { username } = req.params;
+  let { username } = req.params;
   const { page = 1, limit = 10 } = req.query;
 
-  if (!username) throw new ApiError(400, "Username is required.");
+  // Validate input
+  if (!username) {
+    return res.status(400).json(new ApiResponse(400, null, "Username is required."));
+  }
 
-  const user = await User.findOne({ username: username.toLowerCase() });
-  if (!user) throw new ApiError(404, "User does not exist.");
+  // Convert username to lowercase
+  username = username.toLowerCase();
 
-  const userVideos = await Video.find({ owner: user._id, isPublished: true })
-    .skip((page - 1) * limit)
-    .limit(parseInt(limit))
-    .sort({ createdAt: -1 });
+  // Find the user by username
+  const user = await User.findOne({ username });
+  if (!user) {
+    return res.status(404).json(new ApiResponse(404, null, "User does not exist."));
+  }
 
-  return res
-    .status(200)
-    .json(new ApiResponse(200, userVideos, "Videos fetched."));
+  const channelId = user._id;
+
+  // Convert pagination parameters to integers
+  const pageNumber = parseInt(page, 10);
+  const pageSize = parseInt(limit, 10);
+
+  // Validate pagination parameters
+  if (isNaN(pageNumber) || isNaN(pageSize) || pageNumber < 1 || pageSize < 1) {
+    return res.status(400).json(new ApiResponse(400, null, "Invalid page or limit."));
+  }
+
+  const skip = (pageNumber - 1) * pageSize;
+
+  // Get total number of videos for pagination metadata
+  const totalVideos = await Video.countDocuments({ owner: channelId, isPublished: false });
+
+  // Fetch videos with pagination
+  const userVideos = await Video.find({ owner: channelId, isPublished: false })
+    .skip(skip)
+    .limit(pageSize)
+    .sort({ createdAt: -1 })
+    .select('title thumbnailUrl createdAt views'); // Select relevant fields
+
+  // Prepare pagination metadata
+  const totalPages = Math.ceil(totalVideos / pageSize);
+  const currentPage = pageNumber;
+
+  // Respond with videos and pagination information
+  return res.status(200).json(new ApiResponse(200, {
+    videos: userVideos,
+    pagination: {
+      totalVideos,
+      totalPages,
+      currentPage,
+      pageSize,
+      hasNextPage: currentPage < totalPages,
+      hasPrevPage: currentPage > 1
+    }
+  }, "Videos fetched."));
 });
+
 
 export { getChannelStats, getChannelVideos };

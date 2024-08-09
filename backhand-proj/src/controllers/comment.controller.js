@@ -10,12 +10,12 @@ const getVideoComments = asyncHandler(async (req, res) => {
   const { videoId } = req.params;
   const { page = 1, limit = 10 } = req.query;
 
-  // Validate videoId
+ 
   if (!mongoose.Types.ObjectId.isValid(videoId)) {
     return res.status(400).json(new ApiResponse(400, null, "Invalid video ID"));
   }
 
-  // Convert page and limit to numbers from string
+
   const pageNumber = parseInt(page, 10);
   const pageSize = parseInt(limit, 10);
 
@@ -30,12 +30,43 @@ const getVideoComments = asyncHandler(async (req, res) => {
   const skip = (pageNumber - 1) * pageSize;
 
   try {
-    // Create the aggregation pipeline
+    
     const pipeline = [
       { $match: { video: new mongoose.Types.ObjectId(videoId) } },
       { $sort: { createdAt: -1 } },
       { $skip: skip },
       { $limit: pageSize },
+      {
+        $lookup: {
+          from: "users",
+          localField: "owner",
+          foreignField: "_id",
+          as: "userDetails",
+          pipeline: [{ $project: { username: 1, avatar: 1 } }],
+        },
+      },
+      { $unwind: { path: "$userDetails", preserveNullAndEmptyArrays: true } },
+      {
+        $lookup: {
+          from: "likes",
+          let: { comment_id: "$_id" },
+          pipeline: [
+            { $match: { $expr: { $eq: ["$comment", "$$comment_id"] } } },
+            { $count: "likeCount" },
+          ],
+          as: "likes",
+        },
+      },
+      { $unwind: { path: "$likes", preserveNullAndEmptyArrays: true } },
+      { $addFields: { likes: { $ifNull: ["$likes.likeCount", 0] } } },
+      {
+        $project: {
+          content: 1,
+          userDetails: 1,
+          likes: 1,
+          updatedAt: 1,
+        },
+      },
     ];
 
     const result = await Comment.aggregatePaginate(
@@ -78,11 +109,10 @@ const getVideoComments = asyncHandler(async (req, res) => {
   }
 });
 
-
 const addComment = asyncHandler(async (req, res) => {
   const { content, videoId } = req.body;
 
-  // Validate input data
+  
   if (!content || !videoId) {
     return res
       .status(400)
@@ -93,18 +123,34 @@ const addComment = asyncHandler(async (req, res) => {
     return res.status(400).json(new ApiResponse(400, null, "Invalid video ID"));
   }
 
-  // Create a new comment with the authenticated user's ID
-  const newComment = new Comment({
-    content,
-    video: videoId,
-    owner: req.user._id, // Use the authenticated user's ID
-  });
-
   try {
+    const newComment = new Comment({
+      content,
+      video: videoId,
+      owner: req.user._id, 
+    });
+
+    
     const savedComment = await newComment.save();
-    return res
-      .status(201)
-      .json(new ApiResponse(201, savedComment, "Comment added successfully"));
+
+   
+    await savedComment
+      .populate({
+        path: "owner",
+        select: "username avatar",
+      })
+      .execPopulate();
+
+    return res.status(201).json(
+      new ApiResponse(
+        201,
+        {
+          comment: savedComment,
+          userDetails: savedComment.owner,
+        },
+        "Comment added successfully"
+      )
+    );
   } catch (error) {
     console.error("Error adding comment:", error);
     return res.status(500).json(new ApiResponse(500, null, "Server Error"));
@@ -112,47 +158,47 @@ const addComment = asyncHandler(async (req, res) => {
 });
 
 const updateComment = asyncHandler(async (req, res) => {
-  const { id } = req.params; // Comment ID from URL params
-  const { content } = req.body; // New content to update
+  const { id } = req.params; 
+  const { content } = req.body; 
 
-  // Ensure content is provided
+  
   if (!content) {
     return res
       .status(400)
       .json(new ApiResponse(400, null, "Content is required"));
   }
 
-  // Ensure comment ID is valid
+  
   if (!mongoose.Types.ObjectId.isValid(id)) {
     return res
       .status(400)
       .json(new ApiResponse(400, null, "Invalid comment ID"));
   }
 
-  // Find the comment to update
-  const comment = await Comment.findById(id);
-
-  // Check if comment exists
-  if (!comment) {
-    return res
-      .status(404)
-      .json(new ApiResponse(404, null, "Comment not found"));
-  }
-
-  // Check if the user is the owner of the comment
-  if (comment.owner.toString() !== req.user._id.toString()) {
-    return res
-      .status(403)
-      .json(
-        new ApiResponse(403, null, "Not authorized to update this comment")
-      );
-  }
-
-  // Update the comment
-  comment.content = content;
-
   try {
+   
+    const comment = await Comment.findById(id);
+
+    
+    if (!comment) {
+      return res
+        .status(404)
+        .json(new ApiResponse(404, null, "Comment not found"));
+    }
+
+    
+    if (comment.owner.toString() !== req.user._id.toString()) {
+      return res
+        .status(403)
+        .json(
+          new ApiResponse(403, null, "Not authorized to update this comment")
+        );
+    }
+
+    
+    comment.content = content;
     const updatedComment = await comment.save();
+
     return res
       .status(200)
       .json(
@@ -165,9 +211,9 @@ const updateComment = asyncHandler(async (req, res) => {
 });
 
 const deleteComment = asyncHandler(async (req, res) => {
-  // TODO: delete a comment
   const { commentId } = req.params;
 
+ 
   if (!mongoose.Types.ObjectId.isValid(commentId)) {
     return res
       .status(400)
@@ -175,14 +221,27 @@ const deleteComment = asyncHandler(async (req, res) => {
   }
 
   try {
-    // Delete the comment
-    const deletedComment = await Comment.findByIdAndDelete(commentId);
+   
+    const comment = await Comment.findById(commentId);
 
-    if (!deletedComment) {
+    
+    if (!comment) {
       return res
         .status(404)
         .json(new ApiResponse(404, null, "Comment not found"));
     }
+
+    
+    if (comment.owner.toString() !== req.user._id.toString()) {
+      return res
+        .status(403)
+        .json(
+          new ApiResponse(403, null, "Not authorized to delete this comment")
+        );
+    }
+
+  
+    const deletedComment = await Comment.findByIdAndDelete(commentId);
 
     return res
       .status(200)
