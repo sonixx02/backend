@@ -15,7 +15,7 @@ const isPlaylistOwner = async (playlistId, userId) => {
 };
 
 // Create a new playlist
-export const createPlaylist = asyncHandler(async (req, res) => {
+ const createPlaylist = asyncHandler(async (req, res) => {
     const { name, description } = req.body;
 
     if (!name) throw new ApiError(400, "Playlist name is required.");
@@ -30,7 +30,7 @@ export const createPlaylist = asyncHandler(async (req, res) => {
 });
 
 // Get all playlists for a user
-export const getUserPlaylists = asyncHandler(async (req, res) => {
+ const getUserPlaylists = asyncHandler(async (req, res) => {
     const { userId } = req.params;
 
     if (!isValidObjectId(userId)) throw new ApiError(400, "Invalid user ID.");
@@ -55,7 +55,7 @@ export const getUserPlaylists = asyncHandler(async (req, res) => {
 });
 
 // Get a playlist by ID
-export const getPlaylistById = asyncHandler(async (req, res) => {
+ const getPlaylistById = asyncHandler(async (req, res) => {
     const { playlistId } = req.params;
 
     if (!isValidObjectId(playlistId)) throw new ApiError(400, "Invalid playlist ID.");
@@ -90,7 +90,7 @@ export const getPlaylistById = asyncHandler(async (req, res) => {
 });
 
 // Add a video to a playlist
-export const addVideoToPlaylist = asyncHandler(async (req, res) => {
+ const addVideoToPlaylist = asyncHandler(async (req, res) => {
     const { playlistId, videoId } = req.params;
 
     if (!isValidObjectId(playlistId) || !isValidObjectId(videoId)) throw new ApiError(400, "Invalid ID.");
@@ -110,7 +110,7 @@ export const addVideoToPlaylist = asyncHandler(async (req, res) => {
 });
 
 // Remove a video from a playlist
-export const removeVideoFromPlaylist = asyncHandler(async (req, res) => {
+ const removeVideoFromPlaylist = asyncHandler(async (req, res) => {
     const { playlistId, videoId } = req.params;
 
     if (!isValidObjectId(playlistId) || !isValidObjectId(videoId)) throw new ApiError(400, "Invalid ID.");
@@ -130,7 +130,7 @@ export const removeVideoFromPlaylist = asyncHandler(async (req, res) => {
 });
 
 // Delete a playlist
-export const deletePlaylist = asyncHandler(async (req, res) => {
+ const deletePlaylist = asyncHandler(async (req, res) => {
     const { playlistId } = req.params;
 
     if (!isValidObjectId(playlistId)) throw new ApiError(400, "Invalid playlist ID.");
@@ -146,7 +146,7 @@ export const deletePlaylist = asyncHandler(async (req, res) => {
 });
 
 // Update a playlist
-export const updatePlaylist = asyncHandler(async (req, res) => {
+ const updatePlaylist = asyncHandler(async (req, res) => {
     const { playlistId } = req.params;
     const { name, description } = req.body;
 

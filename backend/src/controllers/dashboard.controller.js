@@ -4,7 +4,7 @@ import { ApiResponse } from "../utils/ApiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { User } from "../models/user.model.js";
 
-export const getChannelStats = asyncHandler(async (req, res) => {
+ const getChannelStats = asyncHandler(async (req, res) => {
   const { username } = req.params;
 
   const channelStats = await User.aggregate([
@@ -102,7 +102,7 @@ export const getChannelStats = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, { channelStats }, "Channel stats fetched."));
 });
 
-export const getChannelVideos = asyncHandler(async (req, res) => {
+ const getChannelVideos = asyncHandler(async (req, res) => {
   let { username } = req.params;
   const { page = 1, limit = 10 } = req.query;
 
@@ -134,10 +134,10 @@ export const getChannelVideos = asyncHandler(async (req, res) => {
   const skip = (pageNumber - 1) * pageSize;
 
   // Get total number of videos for pagination metadata
-  const totalVideos = await Video.countDocuments({ owner: channelId, isPublished: false });
+  const totalVideos = await Video.countDocuments({ owner: channelId, isPublished: true });
 
   // Fetch videos with pagination
-  const userVideos = await Video.find({ owner: channelId, isPublished: false })
+  const userVideos = await Video.find({ owner: channelId, isPublished: true })
     .skip(skip)
     .limit(pageSize)
     .sort({ createdAt: -1 })

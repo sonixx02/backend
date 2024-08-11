@@ -101,36 +101,42 @@ router
   .get(getVideoComments)
   .post(verifyJWT, addComment);
 
-router.route("/comments/:id").put(verifyJWT, updateComment);
+  router.route("/comments/:id").put(verifyJWT, updateComment);
 
-router.route("/comments/:commentId").delete(verifyJWT, deleteComment);
+  router.route('/comments/:commentId')
+  .delete(verifyJWT, deleteComment); 
 
-router.get("/", getAllVideos);
+  router.route('/getVideos').get(getAllVideos)
 
-router.post("/publish", verifyJWT, upload.single("videoFile"), publishAVideo);
-router.get("/:videoId", getVideoById);
+  router.route("/publish")
+  .post(verifyJWT, upload.fields([{ name: 'videoFile' }, { name: 'thumbnailFile' }]), publishAVideo);
 
-router.put("/:videoId", verifyJWT, updateVideo);
+  router.route('/:videoId')
+  .get(verifyJWT,getVideoById)  // GET request to fetch a video by ID
+  .put(verifyJWT, updateVideo)  // PUT request to update a video by ID
+  .delete(verifyJWT, deleteVideo);  // DELETE request to delete a video by ID
 
-router.delete("/:videoId", verifyJWT, deleteVideo);
+// Route for toggling the publish status of a video by ID
+router.route('/:videoId/toggle-publish')
+  .patch(verifyJWT, togglePublishStatus);  // PATCH request to toggle publish status
 
-router.patch("/:videoId/toggle-publish", verifyJWT, togglePublishStatus);
+router.route("/videos/:videoId/like").post(verifyJWT, toggleVideoLike);
+router.route("/comments/:commentId/like").post(verifyJWT, toggleCommentLike);
+router.route("/tweets/:tweetId/like").post(verifyJWT, toggleTweetLike);
+router.route("/videos/liked").get(verifyJWT, getLikedVideos);
 
-router.route("/videos/:videoId/like").post(protect, toggleVideoLike);
-router.route("/comments/:commentId/like").post(protect, toggleCommentLike);
-router.route("/tweets/:tweetId/like").post(protect, toggleTweetLike);
-router.route("/videos/liked").get(protect, getLikedVideos);
-
-router.route("/tweets").post(protect, createTweet);
-router.route("/tweets/:tweetId").get(protect, getUserTweets);
-router.route("/tweets/:id").put(protect, updateTweet);
-router.route("/tweets/:id").delete(protect, deleteTweet);
+router.route("/tweets").post(verifyJWT, createTweet);
+router.route("/tweets/:userId").get(verifyJWT, getUserTweets);
+router.route("/tweets/:tweetId").put(verifyJWT, updateTweet);
+router.route("/tweets/:tweetId").delete(verifyJWT, deleteTweet);
 
 // Playlist routes
 router
   .route("/playlists")
   .post(verifyJWT, createPlaylist)
-  .get(verifyJWT, getUserPlaylists);
+
+router.route('/user/:userId').get(getUserPlaylists);
+
 router
   .route("/playlists/:playlistId")
   .get(verifyJWT, getPlaylistById)
@@ -152,7 +158,7 @@ router
   .get(verifyJWT, getSubscribedChannels);
 
 // Dashboard routes
-router.route("/dashboard/channel-stats").get(verifyJWT, getChannelStats);
-router.route("/dashboard/channel-videos").get(verifyJWT, getChannelVideos);
+router.route("/dashboard/channel-stats/:username").get(verifyJWT, getChannelStats);
+router.route("/dashboard/channel-videos/:username").get(verifyJWT, getChannelVideos);
 
 export default router;

@@ -1,8 +1,5 @@
 import { asyncHandler } from "../utils/asyncHandler.js";
-import { ApiError } from "../utils/ApiError.js";
-import { User } from "../models/user.model.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
-import jwt from "jsonwebtoken";
 import mongoose from "mongoose";
 import { Comment } from "../models/comment.model.js";
 
@@ -158,47 +155,47 @@ const addComment = asyncHandler(async (req, res) => {
 });
 
 const updateComment = asyncHandler(async (req, res) => {
-  const { id } = req.params; 
-  const { content } = req.body; 
+  const { id } = req.params; // Comment ID from URL params
+  const { content } = req.body; // New content to update
 
-  
+  // Ensure content is provided
   if (!content) {
     return res
       .status(400)
       .json(new ApiResponse(400, null, "Content is required"));
   }
 
-  
+  // Ensure comment ID is valid
   if (!mongoose.Types.ObjectId.isValid(id)) {
     return res
       .status(400)
       .json(new ApiResponse(400, null, "Invalid comment ID"));
   }
 
+  // Find the comment to update
+  const comment = await Comment.findById(id);
+
+  // Check if comment exists
+  if (!comment) {
+    return res
+      .status(404)
+      .json(new ApiResponse(404, null, "Comment not found"));
+  }
+
+  // Check if the user is the owner of the comment
+  if (comment.owner.toString() !== req.user._id.toString()) {
+    return res
+      .status(403)
+      .json(
+        new ApiResponse(403, null, "Not authorized to update this comment")
+      );
+  }
+
+  // Update the comment
+  comment.content = content;
+
   try {
-   
-    const comment = await Comment.findById(id);
-
-    
-    if (!comment) {
-      return res
-        .status(404)
-        .json(new ApiResponse(404, null, "Comment not found"));
-    }
-
-    
-    if (comment.owner.toString() !== req.user._id.toString()) {
-      return res
-        .status(403)
-        .json(
-          new ApiResponse(403, null, "Not authorized to update this comment")
-        );
-    }
-
-    
-    comment.content = content;
     const updatedComment = await comment.save();
-
     return res
       .status(200)
       .json(
@@ -213,7 +210,6 @@ const updateComment = asyncHandler(async (req, res) => {
 const deleteComment = asyncHandler(async (req, res) => {
   const { commentId } = req.params;
 
- 
   if (!mongoose.Types.ObjectId.isValid(commentId)) {
     return res
       .status(400)
@@ -221,33 +217,17 @@ const deleteComment = asyncHandler(async (req, res) => {
   }
 
   try {
-   
-    const comment = await Comment.findById(commentId);
+    const deletedComment = await Comment.findByIdAndDelete(commentId);
 
-    
-    if (!comment) {
+    if (!deletedComment) {
       return res
         .status(404)
         .json(new ApiResponse(404, null, "Comment not found"));
     }
 
-    
-    if (comment.owner.toString() !== req.user._id.toString()) {
-      return res
-        .status(403)
-        .json(
-          new ApiResponse(403, null, "Not authorized to delete this comment")
-        );
-    }
-
-  
-    const deletedComment = await Comment.findByIdAndDelete(commentId);
-
     return res
       .status(200)
-      .json(
-        new ApiResponse(200, deletedComment, "Comment deleted successfully")
-      );
+      .json(new ApiResponse(200, deletedComment, "Comment deleted successfully"));
   } catch (error) {
     console.error("Error deleting comment:", error);
     return res.status(500).json(new ApiResponse(500, null, "Server Error"));

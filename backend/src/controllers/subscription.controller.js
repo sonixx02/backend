@@ -5,8 +5,7 @@ import { ApiResponse } from "../utils/ApiResponse.js";
 import { ApiError } from "../utils/ApiError.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 
-
-export const toggleSubscription = asyncHandler(async (req, res) => {
+ const toggleSubscription = asyncHandler(async (req, res) => {
     const { channelId } = req.params;
 
     if (!mongoose.Types.ObjectId.isValid(channelId)) {
@@ -31,7 +30,7 @@ export const toggleSubscription = asyncHandler(async (req, res) => {
 });
 
 
-export const getUserChannelSubscribers = asyncHandler(async (req, res) => {
+ const getUserChannelSubscribers = asyncHandler(async (req, res) => {
     const { channelId } = req.params;
     const { page = 1, limit = 10 } = req.query;
 
@@ -61,7 +60,7 @@ export const getUserChannelSubscribers = asyncHandler(async (req, res) => {
 });
 
 
-export const getSubscribedChannels = asyncHandler(async (req, res) => {
+ const getSubscribedChannels = asyncHandler(async (req, res) => {
     const { subscriberId } = req.params;
 
     if (!mongoose.Types.ObjectId.isValid(subscriberId)) {

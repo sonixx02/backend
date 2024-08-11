@@ -4,7 +4,7 @@ import { ApiResponse } from "../utils/ApiResponse.js";
 import { Like } from "../models/like.model.js";
 import mongoose from "mongoose";
 
-export const toggleVideoLike = asyncHandler(async (req, res) => {
+ const toggleVideoLike = asyncHandler(async (req, res) => {
   const { videoId } = req.params;
 
   if (!mongoose.Types.ObjectId.isValid(videoId)) {
@@ -44,7 +44,7 @@ export const toggleVideoLike = asyncHandler(async (req, res) => {
   }
 });
 
-export const toggleCommentLike = asyncHandler(async (req, res) => {
+ const toggleCommentLike = asyncHandler(async (req, res) => {
   const { commentId } = req.params;
 
   if (!mongoose.Types.ObjectId.isValid(commentId)) {
@@ -89,7 +89,7 @@ export const toggleCommentLike = asyncHandler(async (req, res) => {
   }
 });
 
-export const toggleTweetLike = asyncHandler(async (req, res) => {
+ const toggleTweetLike = asyncHandler(async (req, res) => {
   const { tweetId } = req.params;
 
   if (!mongoose.Types.ObjectId.isValid(tweetId)) {
@@ -129,7 +129,7 @@ export const toggleTweetLike = asyncHandler(async (req, res) => {
   }
 });
 
-export const getLikedVideos = asyncHandler(async (req, res) => {
+ const getLikedVideos = asyncHandler(async (req, res) => {
   const likedVideos = await Like.aggregate([
     {
       $match: {
