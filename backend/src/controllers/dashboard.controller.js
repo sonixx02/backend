@@ -4,7 +4,7 @@ import { ApiResponse } from "../utils/ApiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { User } from "../models/user.model.js";
 
- const getChannelStats = asyncHandler(async (req, res) => {
+const getChannelStats = asyncHandler(async (req, res) => {
   const { username } = req.params;
 
   const channelStats = await User.aggregate([
@@ -102,7 +102,7 @@ import { User } from "../models/user.model.js";
     .json(new ApiResponse(200, { channelStats }, "Channel stats fetched."));
 });
 
- const getChannelVideos = asyncHandler(async (req, res) => {
+const getChannelVideos = asyncHandler(async (req, res) => {
   let { username } = req.params;
   const { page = 1, limit = 10 } = req.query;
 
@@ -162,4 +162,59 @@ import { User } from "../models/user.model.js";
 });
 
 
-export { getChannelStats, getChannelVideos };
+const getRandomVideos = asyncHandler(async (req, res) => {
+  const { page = 1, limit = 10 } = req.query;
+
+
+  const pageNumber = parseInt(page, 10);
+  const pageSize = parseInt(limit, 10);
+
+
+  if (isNaN(pageNumber) || isNaN(pageSize) || pageNumber < 1 || pageSize < 1) {
+    return res.status(400).json(new ApiResponse(400, null, "Invalid page or limit."));
+  }
+
+
+  const skip = (pageNumber - 1) * pageSize;
+
+
+  const totalVideos = await Video.countDocuments({ isPublished: true });
+
+
+  const randomVideos = await Video.aggregate([
+    { $match: { isPublished: true } },
+    { $sample: { size: totalVideos > pageSize ? pageSize : totalVideos } },
+    { $sort: { createdAt: -1 } },
+    {
+      $project: {
+        title: 1,
+        thumbnail: 1,
+        createdAt: 1,
+        views: 1,
+        videoFile: 1,
+      }
+    }
+  ])
+    .skip(skip)
+    .limit(pageSize);
+
+
+  const totalPages = Math.ceil(totalVideos / pageSize);
+  const currentPage = pageNumber;
+
+
+  return res.status(200).json(new ApiResponse(200, {
+    videos: randomVideos,
+    pagination: {
+      totalVideos,
+      totalPages,
+      currentPage,
+      pageSize,
+      hasNextPage: currentPage < totalPages,
+      hasPrevPage: currentPage > 1
+    }
+  }, "Random videos fetched."));
+});
+
+
+export { getChannelStats, getChannelVideos, getRandomVideos };

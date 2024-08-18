@@ -59,6 +59,7 @@ import {
 import {
   getChannelStats,
   getChannelVideos,
+  getRandomVideos,
 } from "../controllers/dashboard.controller.js";
 
 import { upload } from "../middlewares/multer.middleware.js";
@@ -112,14 +113,13 @@ router
   .post(verifyJWT, upload.fields([{ name: 'videoFile' }, { name: 'thumbnailFile' }]), publishAVideo);
 
   router.route('/:videoId')
-  .get(verifyJWT,getVideoById)  // GET request to fetch a video by ID
-  .put(verifyJWT, updateVideo)  // PUT request to update a video by ID
-  .delete(verifyJWT, deleteVideo);  // DELETE request to delete a video by ID
+  .get(verifyJWT,getVideoById) 
+  .put(verifyJWT, updateVideo) 
+  .delete(verifyJWT, deleteVideo); 
 
-// Route for toggling the publish status of a video by ID
+
 router.route('/:videoId/toggle-publish')
-  .patch(verifyJWT, togglePublishStatus);  // PATCH request to toggle publish status
-
+  .patch(verifyJWT, togglePublishStatus);  
 router.route("/videos/:videoId/like").post(verifyJWT, toggleVideoLike);
 router.route("/comments/:commentId/like").post(verifyJWT, toggleCommentLike);
 router.route("/tweets/:tweetId/like").post(verifyJWT, toggleTweetLike);
@@ -160,5 +160,6 @@ router
 // Dashboard routes
 router.route("/dashboard/channel-stats/:username").get(verifyJWT, getChannelStats);
 router.route("/dashboard/channel-videos/:username").get(verifyJWT, getChannelVideos);
+router.route("/dashboard/random").get(verifyJWT,getRandomVideos)
 
 export default router;

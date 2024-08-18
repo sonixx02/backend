@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
 import { login } from '../redux/authSlice';
 
 const Login = () => {
@@ -8,10 +9,13 @@ const Login = () => {
   const [username, setUsername] = useState(''); 
   const dispatch = useDispatch();
   const { status, error } = useSelector((state) => state.auth);
+  const navigate = useNavigate();
+  
 
   const handleSubmit = (e) => {
     e.preventDefault();
     dispatch(login({ email, password, username }));
+    navigate('/dashboard');
   };
 
   return (
