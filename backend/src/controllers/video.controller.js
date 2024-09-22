@@ -181,46 +181,65 @@ const getVideoById = asyncHandler(async (req, res) => {
 
 
 
- const updateVideo = asyncHandler(async (req, res) => {
+const updateVideo = asyncHandler(async (req, res) => {
+  console.log('Request body:', req.body);
+  console.log('Request file:', req.file);
   const { videoId } = req.params;
   const { title, description } = req.body;
-  const thumbnailFile = req.file;
+  const videoFile = req.file;
 
-  if (!(title || description || thumbnailFile)) {
-    throw new ApiError(400, "At least one field is required to update");
+
+  // Validate at least one field is provided
+  if (!(title || description || videoFile)) {
+    throw new ApiError(400, "At least one field (title, description, or video file) is required to update");
   }
 
+  // Check if the user is the owner of the video
   const isOwner = await isVideoOwner(videoId, req.user._id);
   if (!isOwner) {
     throw new ApiError(403, "Not authorized to update this video");
   }
 
+  // Find the video to update
   const prevVideoDetails = await Video.findById(videoId);
   if (!prevVideoDetails) {
     throw new ApiError(404, "Video not found");
   }
 
-  let thumbnail = prevVideoDetails.thumbnail;
-  if (thumbnailFile) {
-    thumbnail = await uploadOnCloudinary(thumbnailFile.path);
-    await deleteFromCloudinary(prevVideoDetails.thumbnail);
-    thumbnail = thumbnail.secure_url;
+  // Handle video file upload
+  let videofile = prevVideoDetails.videoFile;
+  if (videoFile) {
+    try {
+      // Upload the new video file to Cloudinary
+      const uploadedVideo = await uploadOnCloudinary(videoFile.path);
+      // Delete the old video file from Cloudinary
+      await deleteFromCloudinary(prevVideoDetails.videoFile);
+      // Set the new video file URL
+      videofile = uploadedVideo.secure_url;
+    } catch (error) {
+      throw new ApiError(500, "Error handling video file");
+    }
   }
 
+  // Prepare updated fields
   const updatedFields = {
     title: title || prevVideoDetails.title,
     description: description || prevVideoDetails.description,
-    thumbnail: thumbnail || prevVideoDetails.thumbnail,
+    videoFile: videofile || prevVideoDetails.videoFile,
   };
 
+  // Update the video in the database
   const updatedVideo = await Video.findByIdAndUpdate(videoId, updatedFields, {
     new: true,
     runValidators: true,
   });
+
+  // Return the updated video details
   return res
     .status(200)
     .json(new ApiResponse(200, updatedVideo, "Video updated successfully"));
 });
+
 
 
  const deleteVideo = asyncHandler(async (req, res) => {

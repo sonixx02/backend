@@ -77,7 +77,7 @@ const registerUser = asyncHandler(async (req, res) => {
 
   const user = await User.create({
     fullName,
-    avatar: avatar.url,
+    avatar: avatar?.url,
     coverImage: coverImage?.url || "",
     email,
     password,
@@ -471,6 +471,26 @@ const getWatchHistory = asyncHandler(async (req, res) => {
     );
 });
 
+const addToWatchHistory = asyncHandler(async (req, res) => {
+  const { videoId } = req.body;
+
+  if (!videoId) {
+    return res.status(400).json({ message: "Video ID is required" });
+  }
+
+  // Update user's watch history
+  await User.findByIdAndUpdate(
+    req.user._id,
+    {
+      $addToSet: { watchHistory: videoId }, // Add videoId to watchHistory if it doesn't already exist
+    },
+    { new: true } // Return the updated document
+  );
+
+  return res.status(200).json({ message: "Video added to watch history successfully" });
+});
+
+
 export {
   registerUser,
   loginUser,
@@ -483,4 +503,5 @@ export {
   updateUserCoverImage,
   getUserChannelProfile,
   getWatchHistory,
+  addToWatchHistory
 };

@@ -11,6 +11,7 @@ import {
   getUserChannelProfile,
   getWatchHistory,
   updateAccountDetails,
+  addToWatchHistory
 } from "../controllers/user.controller.js";
 import {
   getVideoComments,
@@ -97,6 +98,7 @@ router
   .patch(verifyJWT, upload.single("coverImage"), updateUserCoverImage);
 router.route("/c/:username").get(verifyJWT, getUserChannelProfile);
 router.route("/history").get(verifyJWT, getWatchHistory);
+router.route("/watch-history").post(verifyJWT,  addToWatchHistory);
 router
   .route("/videos/:videoId/comments")
   .get(getVideoComments)
@@ -113,9 +115,9 @@ router
   .post(verifyJWT, upload.fields([{ name: 'videoFile' }, { name: 'thumbnailFile' }]), publishAVideo);
 
   router.route('/:videoId')
-  .get(verifyJWT,getVideoById) 
-  .put(verifyJWT, updateVideo) 
-  .delete(verifyJWT, deleteVideo); 
+  .get(verifyJWT, getVideoById)
+  .put(verifyJWT, upload.single('videoFile'), updateVideo)
+  .delete(verifyJWT, deleteVideo);
 
 
 router.route('/:videoId/toggle-publish')

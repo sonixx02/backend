@@ -6,6 +6,7 @@ import Logout from './components/Logout';
 import Dashboard from './components/Dashboard';
 import VideoDetail from './components/VideoDetail';
 import AdminVideos from './components/AdminVideos'; 
+import History from './components/History';
 
 const App = () => {
   const user = useSelector((state) => state.auth.user);
@@ -24,6 +25,7 @@ const App = () => {
             <Route path="/logout" element={<Logout />} />
             <Route path="/video/:videoId" element={<VideoDetail />} />
             <Route path="/admin" element={<AdminVideos />} /> 
+            <Route path="/history" element={<History />} />
             <Route path="*" element={<Navigate to="/dashboard" />} />
           </>
         )}

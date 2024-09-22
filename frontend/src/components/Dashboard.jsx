@@ -1,14 +1,18 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useSelector, useDispatch } from "react-redux";
-import { Link } from "react-router-dom"; 
-import { RandomVideos, addVideo } from "../redux/videosSlice";
+import { Link, useNavigate } from "react-router-dom";
+import {
+  RandomVideos,
+  addVideo,
+  addToWatchHistory,
+} from "../redux/videosSlice";
 import { logout } from "../redux/authSlice";
-import { useNavigate } from "react-router-dom";
 
 const Dashboard = () => {
   const dispatch = useDispatch();
   const { videos, status, error } = useSelector((state) => state.videos);
   const user = useSelector((state) => state.auth.user);
+  const navigate = useNavigate();
 
   const [query, setQuery] = useState("");
   const [showForm, setShowForm] = useState(false);
@@ -17,6 +21,8 @@ const Dashboard = () => {
     description: "",
     file: null,
   });
+
+  const videoRefs = useRef({}); // To store refs for each video
 
   useEffect(() => {
     dispatch(RandomVideos());
@@ -37,11 +43,7 @@ const Dashboard = () => {
       [name]: files ? files[0] : value,
     }));
   };
-  const navigate = useNavigate();
 
-  const handleAdminPage = () => {
-    navigate("/admin");
-  };
   const handleSubmit = (e) => {
     e.preventDefault();
     if (newVideo.title && newVideo.file) {
@@ -60,11 +62,40 @@ const Dashboard = () => {
     }
   };
 
+  const handleAdminPage = () => {
+    pauseAllVideos();
+    navigate("/admin");
+  };
+
+  const handleVideoClick = (videoId) => {
+    pauseAllVideos();
+    dispatch(addToWatchHistory(videoId)).then(() => {
+      console.log(`Video ID ${videoId} added to watch history`);
+      navigate(`/video/${videoId}`);
+    });
+  };
+
+  // Pauses all playing videos when navigating away
+  const pauseAllVideos = () => {
+    Object.values(videoRefs.current).forEach((video) => {
+      if (video) {
+        video.pause();
+        video.currentTime = 0; // Optionally reset the time
+      }
+    });
+  };
+
   const videoArray = videos?.videos || [];
   const filteredVideos = videoArray.filter((video) =>
     video.title.toLowerCase().includes(query.toLowerCase())
   );
   const videoList = query ? filteredVideos : videoArray;
+
+  useEffect(() => {
+    return () => {
+      pauseAllVideos();
+    };
+  }, []);
 
   if (status === "loading") {
     return <div className="text-center text-lg font-semibold">Loading...</div>;
@@ -84,7 +115,6 @@ const Dashboard = () => {
           Logout
         </button>
 
-       
         <button
           onClick={() => setShowForm(!showForm)}
           className="bg-green-500 text-white py-2 px-4 rounded hover:bg-green-600"
@@ -101,10 +131,9 @@ const Dashboard = () => {
       </div>
 
       <h1 className="text-3xl font-bold mt-4">
-        Welcome, {user?.data?.user?.username|| "Guest"}!
+        Welcome, {user?.data?.user?.username || "Guest"}!
       </h1>
 
-    
       <form onSubmit={(e) => e.preventDefault()} className="mt-6 mb-8 flex">
         <input
           type="text"
@@ -121,7 +150,6 @@ const Dashboard = () => {
         </button>
       </form>
 
-      
       {showForm && (
         <form
           onSubmit={handleSubmit}
@@ -173,19 +201,32 @@ const Dashboard = () => {
         </form>
       )}
 
-      
       {videoList.length > 0 ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
           {videoList.map((video) => (
-            <Link
-              to={`/video/${video._id}`}
+            <div
               key={video._id}
-              className="bg-white shadow-md rounded-lg overflow-hidden"
+              className="bg-white shadow-md rounded-lg overflow-hidden flex flex-col"
             >
               <h2 className="text-xl font-semibold p-4">{video.title}</h2>
-              <video src={video.videoFile} controls className="w-full"></video>
+              <div
+                className="relative w-full"
+                style={{ paddingBottom: "56.25%" }}
+              >
+                {" "}
+                {/* 16:9 aspect ratio */}
+                <video
+                  ref={(el) => (videoRefs.current[video._id] = el)}
+                  controls
+                  className="absolute top-0 left-0 w-full h-full object-cover"
+                  onPlay={() => handleVideoClick(video._id)}
+                >
+                  <source src={video.videoFile} type="video/mp4" />
+                  Your browser does not support the video tag.
+                </video>
+              </div>
               <p className="p-4 text-gray-700">{video.description}</p>
-            </Link>
+            </div>
           ))}
         </div>
       ) : (
